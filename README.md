@@ -36,14 +36,14 @@ No keys are created. Access is entirely federated.
 
 ### Via Formal Console
 
-Formal Console shows the exact command, with every argument filled in, when you create the GCP integration. Paste it into an authenticated Cloud Shell for the project:
+Formal Console shows the exact command, with the id and security key filled in, when you create the GCP integration. Paste it into an authenticated Cloud Shell for the project:
 
 ```bash
 bash <(curl -sSL https://raw.githubusercontent.com/formalco/terraform-formal-gcp/main/setup.sh) \
-  <integration_id> <project_id> <formal_role_arn> [role...]
+  <integration_id> <security_key>
 ```
 
-It runs `terraform apply`, then reports the created service account and provider back to Formal, which activates the integration.
+It fetches the setup parameters from Formal, runs `terraform apply`, then reports the created service account and provider back to Formal, which activates the integration.
 
 ### With the Formal Terraform provider
 
@@ -64,7 +64,6 @@ module "formal_gcp" {
   integration_id  = formal_integration_cloud.gcp.id
   formal_role_arn = formal_integration_cloud.gcp.aws_formal_role_arn
   project_id      = "my-gcp-project"
-  roles           = ["roles/cloudasset.viewer"]
 }
 
 resource "formal_integration_cloud_gcp_activation" "gcp" {

@@ -3,38 +3,35 @@
 # Connect a Google Cloud project to Formal via Workload Identity Federation.
 #
 # Run this inside an authenticated Google Cloud Shell for the project you want
-# to connect. It applies the Terraform in this repo, then reports the created
-# service account and workload identity pool provider back to Formal, which
-# activates the integration. Formal shows the exact command (with all arguments
-# filled in) when you create the GCP integration.
+# to connect. It fetches the integration parameters from Formal, applies the
+# Terraform in this repo, then reports the created service account and workload
+# identity pool provider back to Formal, which activates the integration. Formal
+# shows the exact command when you create the GCP integration.
 #
 # Usage:
-#   ./setup.sh <integration_id> <project_id> <formal_role_arn> [role...]
+#   ./setup.sh <integration_id> <security_key>
 #
-# Any arguments after formal_role_arn are IAM roles to grant Formal's service
-# account on the project (e.g. roles/cloudasset.viewer roles/storage.objectViewer).
-# Pass none to establish the connection with no project access.
+# FORMAL_API_URL defaults to production; override it for other environments.
 
 set -euo pipefail
 
 INTEGRATION_ID="${1:-}"
-PROJECT_ID="${2:-}"
-FORMAL_ROLE_ARN="${3:-}"
+SECURITY_KEY="${2:-}"
 FORMAL_API_URL="${FORMAL_API_URL:-https://api.joinformal.com}"
 
-if [[ -z "${INTEGRATION_ID}" || -z "${PROJECT_ID}" || -z "${FORMAL_ROLE_ARN}" ]]; then
-  echo "Usage: $0 <integration_id> <project_id> <formal_role_arn> [role...]" >&2
+if [[ -z "${INTEGRATION_ID}" || -z "${SECURITY_KEY}" ]]; then
+  echo "Usage: $0 <integration_id> <security_key>" >&2
   exit 1
 fi
-shift 3
-ROLES=("$@")
 
-# Build a Terraform list literal from the role arguments; empty stays [].
-ROLES_TF="[]"
-if [[ ${#ROLES[@]} -gt 0 ]]; then
-  printf -v roles_joined '"%s",' "${ROLES[@]}"
-  ROLES_TF="[${roles_joined%,}]"
-fi
+SETUP="$(curl -fsS -X POST \
+  "${FORMAL_API_URL%/}/core.v1.IntegrationCloudService/GetGCPCloudIntegrationSetup" \
+  -H "Content-Type: application/json" \
+  -d "{\"id\":\"${INTEGRATION_ID}\",\"securityKey\":\"${SECURITY_KEY}\"}")"
+
+PROJECT_ID="$(jq -r '.projectId' <<<"${SETUP}")"
+FORMAL_ROLE_ARN="$(jq -r '.formalRoleArn' <<<"${SETUP}")"
+ROLES="$(jq -c '.roles // []' <<<"${SETUP}")"
 
 REPO_URL="https://github.com/formalco/terraform-formal-gcp.git"
 WORKDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -52,17 +49,16 @@ terraform apply -input=false -auto-approve \
   -var "integration_id=${INTEGRATION_ID}" \
   -var "project_id=${PROJECT_ID}" \
   -var "formal_role_arn=${FORMAL_ROLE_ARN}" \
-  -var "roles=${ROLES_TF}"
+  -var "roles=${ROLES}"
 
 SERVICE_ACCOUNT_EMAIL="$(terraform output -raw service_account_email)"
 WORKLOAD_IDENTITY_POOL_PROVIDER="$(terraform output -raw workload_identity_pool_provider)"
 
-# Report the created resources back to Formal, which activates the integration.
 curl -fsS -X POST \
   "${FORMAL_API_URL%/}/core.v1.IntegrationCloudService/SetGCPCloudIntegrationActivation" \
   -H "Content-Type: application/json" \
   -d "$(cat <<JSON
-{"id":"${INTEGRATION_ID}","serviceAccountEmail":"${SERVICE_ACCOUNT_EMAIL}","workloadIdentityPoolProvider":"${WORKLOAD_IDENTITY_POOL_PROVIDER}"}
+{"id":"${INTEGRATION_ID}","securityKey":"${SECURITY_KEY}","serviceAccountEmail":"${SERVICE_ACCOUNT_EMAIL}","workloadIdentityPoolProvider":"${WORKLOAD_IDENTITY_POOL_PROVIDER}"}
 JSON
 )"
 
