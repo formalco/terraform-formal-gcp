@@ -44,15 +44,30 @@ fi
 
 cd "${WORKDIR}"
 
-terraform init -input=false
-terraform apply -input=false -auto-approve \
+# Fetch terraform binary when the real one isn't already on PATH.
+TERRAFORM=terraform
+if ! terraform version 2>/dev/null | grep -q '^Terraform v'; then
+  TF_VERSION="$(curl -fsSL https://checkpoint-api.hashicorp.com/v1/check/terraform | jq -r .current_version)"
+  TF_ARCH="$(uname -m)"
+  case "${TF_ARCH}" in
+    x86_64) TF_ARCH=amd64 ;;
+    aarch64 | arm64) TF_ARCH=arm64 ;;
+  esac
+  TF_DIR="$(mktemp -d)"
+  curl -fsSL "https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_${TF_ARCH}.zip" -o "${TF_DIR}/terraform.zip"
+  unzip -q -o "${TF_DIR}/terraform.zip" -d "${TF_DIR}"
+  TERRAFORM="${TF_DIR}/terraform"
+fi
+
+"${TERRAFORM}" init -input=false
+"${TERRAFORM}" apply -input=false -auto-approve \
   -var "integration_id=${INTEGRATION_ID}" \
   -var "project_id=${PROJECT_ID}" \
   -var "formal_role_arn=${FORMAL_ROLE_ARN}" \
   -var "roles=${ROLES}"
 
-SERVICE_ACCOUNT_EMAIL="$(terraform output -raw service_account_email)"
-WORKLOAD_IDENTITY_POOL_PROVIDER="$(terraform output -raw workload_identity_pool_provider)"
+SERVICE_ACCOUNT_EMAIL="$("${TERRAFORM}" output -raw service_account_email)"
+WORKLOAD_IDENTITY_POOL_PROVIDER="$("${TERRAFORM}" output -raw workload_identity_pool_provider)"
 
 curl -fsS -X POST \
   "${FORMAL_API_URL%/}/core.v1.IntegrationCloudService/SetGCPCloudIntegrationActivation" \
