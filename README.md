@@ -40,7 +40,7 @@ Formal Console shows the exact command, with every argument filled in, when you 
 
 ```bash
 bash <(curl -sSL https://raw.githubusercontent.com/formalco/terraform-formal-gcp/main/setup.sh) \
-  <integration_id> <project_id> <formal_role_arn> <formal_api_url> [role...]
+  <integration_id> <project_id> <formal_role_arn> [role...]
 ```
 
 It runs `terraform apply`, then reports the created service account and provider back to Formal, which activates the integration.

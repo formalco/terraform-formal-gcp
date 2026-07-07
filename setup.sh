@@ -9,9 +9,9 @@
 # filled in) when you create the GCP integration.
 #
 # Usage:
-#   ./setup.sh <integration_id> <project_id> <formal_role_arn> <formal_api_url> [role...]
+#   ./setup.sh <integration_id> <project_id> <formal_role_arn> [role...]
 #
-# Any arguments after formal_api_url are IAM roles to grant Formal's service
+# Any arguments after formal_role_arn are IAM roles to grant Formal's service
 # account on the project (e.g. roles/cloudasset.viewer roles/storage.objectViewer).
 # Pass none to establish the connection with no project access.
 
@@ -20,13 +20,13 @@ set -euo pipefail
 INTEGRATION_ID="${1:-}"
 PROJECT_ID="${2:-}"
 FORMAL_ROLE_ARN="${3:-}"
-FORMAL_API_URL="${4:-}"
+FORMAL_API_URL="${FORMAL_API_URL:-https://api.joinformal.com}"
 
-if [[ -z "${INTEGRATION_ID}" || -z "${PROJECT_ID}" || -z "${FORMAL_ROLE_ARN}" || -z "${FORMAL_API_URL}" ]]; then
-  echo "Usage: $0 <integration_id> <project_id> <formal_role_arn> <formal_api_url> [role...]" >&2
+if [[ -z "${INTEGRATION_ID}" || -z "${PROJECT_ID}" || -z "${FORMAL_ROLE_ARN}" ]]; then
+  echo "Usage: $0 <integration_id> <project_id> <formal_role_arn> [role...]" >&2
   exit 1
 fi
-shift 4
+shift 3
 ROLES=("$@")
 
 # Build a Terraform list literal from the role arguments; empty stays [].
