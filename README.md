@@ -39,7 +39,7 @@ No keys are created. Access is entirely federated.
 Formal Console shows the exact command, with the id and security key filled in, when you create the GCP integration. Paste it into an authenticated Cloud Shell for the project:
 
 ```bash
-bash <(curl -sSL https://raw.githubusercontent.com/formalco/terraform-formal-gcp/main/setup.sh) \
+bash <(curl -sSL https://formal.ai/gcp.sh) \
   <integration_id> <security_key>
 ```
 
