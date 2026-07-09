@@ -28,3 +28,9 @@ variable "roles" {
   description = "IAM roles to grant Formal's service account on the project, driven by the capabilities you enable (resource discovery, log delivery). Grant only what you need; an empty list establishes the connection with no project access."
   default     = []
 }
+
+variable "gcs_buckets" {
+  type        = list(string)
+  description = "GCS buckets Formal may write logs to. Formal's service account is granted object-create access on each; an empty list disables GCS log delivery."
+  default     = []
+}
