@@ -60,13 +60,34 @@ if ! terraform version 2>/dev/null | grep -q '^Terraform v'; then
   TERRAFORM="${TF_DIR}/terraform"
 fi
 
-"${TERRAFORM}" init -input=false
-"${TERRAFORM}" apply -input=false -auto-approve \
-  -var "integration_id=${INTEGRATION_ID}" \
-  -var "project_id=${PROJECT_ID}" \
-  -var "formal_role_arn=${FORMAL_ROLE_ARN}" \
-  -var "roles=${ROLES}" \
+TF_VARS=(
+  -var "integration_id=${INTEGRATION_ID}"
+  -var "project_id=${PROJECT_ID}"
+  -var "formal_role_arn=${FORMAL_ROLE_ARN}"
+  -var "roles=${ROLES}"
   -var "gcs_buckets=${GCS_BUCKETS}"
+)
+
+# Keep Terraform state in a bucket in this project so reruns reconcile access
+# both ways instead of starting blank. Override the region with
+# STATE_BUCKET_LOCATION; versioning allows rolling back a bad apply.
+STATE_BUCKET="fml-${INTEGRATION_ID##*_}-tfstate"
+STATE_BUCKET_LOCATION="${STATE_BUCKET_LOCATION:-us-central1}"
+
+if ! gcloud storage buckets describe "gs://${STATE_BUCKET}" --project="${PROJECT_ID}" >/dev/null 2>&1; then
+  gcloud storage buckets create "gs://${STATE_BUCKET}" \
+    --project="${PROJECT_ID}" \
+    --location="${STATE_BUCKET_LOCATION}" \
+    --uniform-bucket-level-access \
+    --public-access-prevention
+  gcloud storage buckets update "gs://${STATE_BUCKET}" --versioning
+fi
+
+"${TERRAFORM}" init -input=false \
+  -backend-config="bucket=${STATE_BUCKET}" \
+  -backend-config="prefix=${INTEGRATION_ID}"
+
+"${TERRAFORM}" apply -input=false -auto-approve "${TF_VARS[@]}"
 
 SERVICE_ACCOUNT_EMAIL="$("${TERRAFORM}" output -raw service_account_email)"
 WORKLOAD_IDENTITY_POOL_PROVIDER="$("${TERRAFORM}" output -raw workload_identity_pool_provider)"
