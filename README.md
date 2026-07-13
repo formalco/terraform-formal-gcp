@@ -47,7 +47,7 @@ It fetches the setup parameters from Formal, runs `terraform apply`, then report
 
 To change access later (for example after enabling or disabling resource discovery or log delivery on the integration), change the capability on the integration in Formal, then run the same command again. The script keeps its Terraform state in a bucket in your project, so a rerun reconciles the granted roles both ways: it adds what the integration now needs and removes what it no longer does.
 
-The state bucket is a single-region Standard bucket named `fml-<suffix>-tfstate`, created in the region set by `STATE_BUCKET_LOCATION` (default `us-central1`).
+State is stored as `<integration_id>.tfstate` in a single-region Standard bucket named `fml-<suffix>`, created in the region set by `STATE_BUCKET_LOCATION` (default `us-central1`).
 
 ### With the Formal Terraform provider
 

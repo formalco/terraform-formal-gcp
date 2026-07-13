@@ -71,21 +71,24 @@ TF_VARS=(
 # Keep Terraform state in a bucket in this project so reruns reconcile access
 # both ways instead of starting blank. Override the region with
 # STATE_BUCKET_LOCATION; versioning allows rolling back a bad apply.
-STATE_BUCKET="fml-${INTEGRATION_ID##*_}-tfstate"
-STATE_BUCKET_LOCATION="${STATE_BUCKET_LOCATION:-us-central1}"
+BUCKET="fml-${INTEGRATION_ID##*_}"
+BUCKET_LOCATION="${STATE_BUCKET_LOCATION:-us-central1}"
 
-if ! gcloud storage buckets describe "gs://${STATE_BUCKET}" --project="${PROJECT_ID}" >/dev/null 2>&1; then
-  gcloud storage buckets create "gs://${STATE_BUCKET}" \
+if ! gcloud storage buckets describe "gs://${BUCKET}" --project="${PROJECT_ID}" >/dev/null 2>&1; then
+  gcloud storage buckets create "gs://${BUCKET}" \
     --project="${PROJECT_ID}" \
-    --location="${STATE_BUCKET_LOCATION}" \
+    --location="${BUCKET_LOCATION}" \
     --uniform-bucket-level-access \
     --public-access-prevention
-  gcloud storage buckets update "gs://${STATE_BUCKET}" --versioning
+  gcloud storage buckets update "gs://${BUCKET}" --versioning
 fi
 
-"${TERRAFORM}" init -input=false \
-  -backend-config="bucket=${STATE_BUCKET}" \
-  -backend-config="prefix=${INTEGRATION_ID}"
+"${TERRAFORM}" init -input=false -backend-config="bucket=${BUCKET}"
+
+# The gcs backend stores state at <workspace>.tfstate in the bucket root, so use
+# the integration id as the workspace to get a flat <integration_id>.tfstate.
+"${TERRAFORM}" workspace select "${INTEGRATION_ID}" 2>/dev/null \
+  || "${TERRAFORM}" workspace new "${INTEGRATION_ID}"
 
 "${TERRAFORM}" apply -input=false -auto-approve "${TF_VARS[@]}"
 

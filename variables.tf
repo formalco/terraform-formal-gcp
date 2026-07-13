@@ -1,6 +1,6 @@
 variable "integration_id" {
   type        = string
-  description = "The Formal cloud integration id (a typeid, e.g. cloud-integration_01hxxxxxxxxxxxxxxxxxxxxxxx). The part after the underscore is used to derive resource names."
+  description = "The Formal cloud integration id (a typeid, e.g. integrationcloud_01hxxxxxxxxxxxxxxxxxxxxxxx). The part after the underscore is used to derive resource names."
 
   validation {
     condition     = can(regex("_[a-z0-9]{26}$", var.integration_id))
