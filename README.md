@@ -12,7 +12,8 @@ In your project, it enables the required APIs (IAM, STS, IAM credentials, Cloud 
 - an AWS-type workload identity pool provider that trusts Formal's AWS account and pins Formal's per-integration role ARN via an attribute condition (only that exact role can exchange a token);
 - a service account for Formal to impersonate;
 - an IAM binding on that service account granting the pool's principal set permission to impersonate it;
-- project IAM bindings granting the service account the roles you pass in `roles`.
+- project IAM bindings granting the service account the roles you pass in `roles`;
+- per-bucket IAM bindings granting `roles/storage.objectCreator` on each bucket in `gcs_buckets`, for log delivery.
 
 No keys are created. Access is entirely federated.
 
@@ -24,6 +25,7 @@ No keys are created. Access is entirely federated.
 | `project_id`      | Google Cloud project id to connect.                                                                               |
 | `formal_role_arn` | AWS IAM role ARN Formal presents for your cloud integration.                                                      |
 | `roles`           | IAM roles to grant Formal's service account on the project, driven by the capabilities you enable (default `[]`). |
+| `gcs_buckets`     | GCS buckets Formal may write logs to; each is granted object-create access. Empty disables log delivery (default `[]`). |
 
 ## Outputs
 
@@ -58,7 +60,10 @@ resource "formal_integration_cloud" "gcp" {
   name = "my-gcp"
 
   gcp {
-    project_id = "my-gcp-project"
+    project_id                              = "my-gcp-project"
+    enable_compute_instances_autodiscovery  = true
+    enable_gke_clusters_autodiscovery       = true
+    enable_cloudsql_instances_autodiscovery = true
   }
 }
 
@@ -68,6 +73,8 @@ module "formal_gcp" {
   integration_id  = formal_integration_cloud.gcp.id
   formal_role_arn = formal_integration_cloud.gcp.aws_formal_role_arn
   project_id      = "my-gcp-project"
+  roles           = formal_integration_cloud.gcp.gcp_roles
+  gcs_buckets     = formal_integration_cloud.gcp.gcp_gcs_buckets
 }
 
 resource "formal_integration_cloud_gcp_activation" "gcp" {
@@ -76,5 +83,7 @@ resource "formal_integration_cloud_gcp_activation" "gcp" {
   workload_identity_pool_provider = module.formal_gcp.workload_identity_pool_provider
 }
 ```
+
+`roles` and `gcs_buckets` come from the integration's computed attributes, which Formal derives from the capabilities you enable on the `gcp` block. Pass them through so the module grants exactly what the integration needs.
 
 The activation resource is separate from `formal_integration_cloud` on purpose: that resource feeds the module its id and role ARN, so reading the module outputs back into it would create a dependency cycle.
