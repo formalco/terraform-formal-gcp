@@ -72,11 +72,18 @@ resource "google_service_account_iam_member" "workload_identity_user" {
   member = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.this.name}/*"
 }
 
-resource "google_project_iam_member" "roles" {
-  for_each = toset(var.roles)
-
+resource "google_project_iam_custom_role" "this" {
   project = var.project_id
-  role    = each.value
+  # role_id allows [a-zA-Z0-9_.] only, so no dash (unlike local.name).
+  role_id     = "fml_${local.suffix}"
+  title       = "Formal integration ${var.integration_id}"
+  description = "Permissions Formal's service account uses, scoped to the enabled capabilities."
+  permissions = var.permissions
+}
+
+resource "google_project_iam_member" "custom_role" {
+  project = var.project_id
+  role    = google_project_iam_custom_role.this.id
   member  = "serviceAccount:${google_service_account.this.email}"
 }
 

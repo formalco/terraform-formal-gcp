@@ -31,7 +31,7 @@ SETUP="$(curl -fsS -X POST \
 
 PROJECT_ID="$(jq -r '.projectId' <<<"${SETUP}")"
 FORMAL_ROLE_ARN="$(jq -r '.formalRoleArn' <<<"${SETUP}")"
-ROLES="$(jq -c '.roles // []' <<<"${SETUP}")"
+PERMISSIONS="$(jq -c '.permissions // []' <<<"${SETUP}")"
 GCS_BUCKETS="$(jq -c '.gcsBuckets // []' <<<"${SETUP}")"
 
 REPO_URL="https://github.com/formalco/terraform-formal-gcp.git"
@@ -64,7 +64,7 @@ TF_VARS=(
   -var "integration_id=${INTEGRATION_ID}"
   -var "project_id=${PROJECT_ID}"
   -var "formal_role_arn=${FORMAL_ROLE_ARN}"
-  -var "roles=${ROLES}"
+  -var "permissions=${PERMISSIONS}"
   -var "gcs_buckets=${GCS_BUCKETS}"
 )
 

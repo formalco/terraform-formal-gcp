@@ -12,7 +12,7 @@ In your project, it enables the required APIs (IAM, STS, IAM credentials, Cloud 
 - an AWS-type workload identity pool provider that trusts Formal's AWS account and pins Formal's per-integration role ARN via an attribute condition (only that exact role can exchange a token);
 - a service account for Formal to impersonate;
 - an IAM binding on that service account granting the pool's principal set permission to impersonate it;
-- project IAM bindings granting the service account the roles you pass in `roles`;
+- a project custom role holding exactly the permissions you pass in `permissions`, granted to the service account;
 - per-bucket IAM bindings granting `roles/storage.objectCreator` on each bucket in `gcs_buckets`, for log delivery.
 
 No keys are created. Access is entirely federated.
@@ -24,7 +24,7 @@ No keys are created. Access is entirely federated.
 | `integration_id`  | Formal Cloud Integration id.                                                                                      |
 | `project_id`      | Google Cloud project id to connect.                                                                               |
 | `formal_role_arn` | AWS IAM role ARN Formal presents for your cloud integration.                                                      |
-| `roles`           | IAM roles to grant Formal's service account on the project, driven by the capabilities you enable (default `[]`). |
+| `permissions`     | IAM permissions to grant Formal's service account, derived from the capabilities you enable. Granted through one custom role. |
 | `gcs_buckets`     | GCS buckets Formal may write logs to; each is granted object-create access. Empty disables log delivery (default `[]`). |
 
 ## Outputs
@@ -73,8 +73,8 @@ module "formal_gcp" {
   integration_id  = formal_integration_cloud.gcp.id
   formal_role_arn = formal_integration_cloud.gcp.aws_formal_role_arn
   project_id      = "my-gcp-project"
-  roles           = formal_integration_cloud.gcp.gcp_roles
-  gcs_buckets     = formal_integration_cloud.gcp.gcp_gcs_buckets
+  permissions     = formal_integration_cloud.gcp.gcp_permissions
+  gcs_buckets     = formal_integration_cloud.gcp.gcp[0].gcs_buckets
 }
 
 resource "formal_integration_cloud_gcp_activation" "gcp" {
@@ -84,6 +84,6 @@ resource "formal_integration_cloud_gcp_activation" "gcp" {
 }
 ```
 
-`roles` and `gcs_buckets` come from the integration's computed attributes, which Formal derives from the capabilities you enable on the `gcp` block. Pass them through so the module grants exactly what the integration needs.
+`permissions` comes from the integration's computed attributes, which Formal derives from the capabilities you enable on the `gcp` block. The module grants them through a single custom role, so it plans in one apply even though Formal computes the list. `gcs_buckets` is read from the same `gcp` block (known at plan time) for per-bucket log-write access.
 
 The activation resource is separate from `formal_integration_cloud` on purpose: that resource feeds the module its id and role ARN, so reading the module outputs back into it would create a dependency cycle.
