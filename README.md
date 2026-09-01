@@ -38,7 +38,7 @@ No keys are created. Access is entirely federated.
 
 ### Via Formal Console
 
-Formal Console shows the exact command, with the id and security key filled in, when you create the GCP integration. Paste it into an authenticated Cloud Shell for the project:
+Formal Console shows the exact command, with the id and security key filled in, when you create the GCP integration. Paste it into an authenticated Cloud Shell for the project. The project must have an [active Cloud Billing account](https://cloud.google.com/billing/docs/how-to/modify-project) linked — setup creates a GCS bucket for Terraform state, and GCS rejects creates when billing is missing (`billing account ... state absent`).
 
 ```bash
 bash <(curl -sSL https://formal.ai/gcp.sh) \
