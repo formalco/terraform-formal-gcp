@@ -34,3 +34,10 @@ variable "gcs_buckets" {
   default     = []
   nullable    = false
 }
+
+variable "pubsub_topics" {
+  type        = list(string)
+  description = "Pub/Sub topics Formal may publish logs to, as full names (projects/<project>/topics/<topic>). Formal's service account is granted roles/pubsub.publisher on each."
+  default     = []
+  nullable    = false
+}

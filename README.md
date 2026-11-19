@@ -13,7 +13,8 @@ In your project, it enables the required APIs (IAM, STS, IAM credentials, Cloud 
 - a service account for Formal to impersonate;
 - an IAM binding on that service account granting the pool's principal set permission to impersonate it;
 - a project custom role holding exactly the permissions you pass in `permissions`, granted to the service account;
-- per-bucket IAM bindings granting `roles/storage.objectCreator` on each bucket in `gcs_buckets`, for log delivery.
+- per-bucket IAM bindings granting `roles/storage.objectCreator` on each bucket in `gcs_buckets`, for log delivery;
+- per-topic IAM bindings granting `roles/pubsub.publisher` on each topic in `pubsub_topics`, for log delivery.
 
 No keys are created. Access is entirely federated.
 
@@ -26,6 +27,7 @@ No keys are created. Access is entirely federated.
 | `formal_role_arn` | AWS IAM role ARN Formal presents for your cloud integration.                                                      |
 | `permissions`     | IAM permissions to grant Formal's service account, derived from the capabilities you enable. Granted through one custom role. |
 | `gcs_buckets`     | GCS buckets Formal may write logs to; each is granted object-create access. Empty disables log delivery (default `[]`). |
+| `pubsub_topics`   | Pub/Sub topics (`projects/<project>/topics/<topic>`) Formal may publish logs to; each is granted `roles/pubsub.publisher` (default `[]`). |
 
 ## Outputs
 
@@ -75,6 +77,7 @@ module "formal_gcp" {
   project_id      = "my-gcp-project"
   permissions     = formal_integration_cloud.gcp.gcp_permissions
   gcs_buckets     = formal_integration_cloud.gcp.gcp[0].gcs_buckets
+  pubsub_topics   = formal_integration_cloud.gcp.gcp[0].pubsub_topics
 }
 
 resource "formal_integration_cloud_gcp_activation" "gcp" {

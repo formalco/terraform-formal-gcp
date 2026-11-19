@@ -33,6 +33,7 @@ PROJECT_ID="$(jq -r '.projectId' <<<"${SETUP}")"
 FORMAL_ROLE_ARN="$(jq -r '.formalRoleArn' <<<"${SETUP}")"
 PERMISSIONS="$(jq -c '.permissions // []' <<<"${SETUP}")"
 GCS_BUCKETS="$(jq -c '.gcsBuckets // []' <<<"${SETUP}")"
+PUBSUB_TOPICS="$(jq -c '.pubsubTopics // []' <<<"${SETUP}")"
 
 REPO_URL="https://github.com/formalco/terraform-formal-gcp.git"
 WORKDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -66,6 +67,7 @@ TF_VARS=(
   -var "formal_role_arn=${FORMAL_ROLE_ARN}"
   -var "permissions=${PERMISSIONS}"
   -var "gcs_buckets=${GCS_BUCKETS}"
+  -var "pubsub_topics=${PUBSUB_TOPICS}"
 )
 
 # Keep Terraform state in a bucket in this project so reruns reconcile access

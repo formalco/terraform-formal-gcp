@@ -94,3 +94,11 @@ resource "google_storage_bucket_iam_member" "log_buckets" {
   role   = "roles/storage.objectCreator"
   member = "serviceAccount:${google_service_account.this.email}"
 }
+
+resource "google_pubsub_topic_iam_member" "log_topics" {
+  for_each = toset(var.pubsub_topics)
+
+  topic  = each.value
+  role   = "roles/pubsub.publisher"
+  member = "serviceAccount:${google_service_account.this.email}"
+}
